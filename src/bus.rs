@@ -1,29 +1,45 @@
 use crate::cartridge::Cartridge;
+use crate::cpu::Cpu;
 
 pub struct Bus {
-
+    cpu: Cpu,
+    cpu_ram: Vec<u8>
 }
 
 impl Bus {
-    pub fn write(addr: u16, data: u8) {
+    pub fn new() -> Bus{
+        Bus { 
+            cpu: Cpu::new(), 
+            cpu_ram: vec![0x00; 2048],
+        }
+    }
+
+    pub fn write(&mut self, addr: u16, data: u8) {
+        // always evaluates to True for time being
+        if addr <= 0x0800{
+            self.cpu_ram[addr as usize] = data;
+        }
+    }
+
+    pub fn read(&self, addr: u16, read_only: bool) -> u8 {
+        // todo
+        if addr <= 0x0800{
+            self.cpu_ram[addr as usize]
+        }
+        else {
+            0x0000
+        }
+    }
+
+    pub fn insert_cartridge(&mut self, cartridge: &Cartridge) {
         // todo
     }
 
-    pub fn read(addr: u16, read_only: bool) -> u8 {
-        // todo
-
-        return 0x0000;
-    }
-
-    pub fn insert_cartridge(cartridge: &Cartridge) {
+    pub fn reset(&mut self) {
         // todo
     }
 
-    pub fn reset() {
-        // todo
-    }
-
-    pub fn clock_tick() {
+    pub fn clock_tick(&mut self) {
         // todo
     }
 }
