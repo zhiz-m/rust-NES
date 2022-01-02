@@ -1,15 +1,13 @@
 use std::string::String;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
-use std::mem::transmute;
+use crate::mappers::mapper::Mapper;
+use crate::mappers::mapper_factory::create_mapper;
 
 pub struct Cartridge {
     program_mem: Vec<u8>,
     character_mem: Vec<u8>,
-
-    mapper_id: u8,
-    num_prg_banks: u8,
-    num_chr_banks: u8,
+    mapper: Box<dyn Mapper>,
 }
 
 impl Cartridge {
@@ -25,20 +23,23 @@ impl Cartridge {
             let mut name = [0x00; 4];
             name.clone_from_slice(&bytes[..4]);
 
+            if name != [0x4E, 0x45, 0x53, 0x1A] {
+                panic!("The file supplied is not in the iNES format");
+            }
+
             let prg_rom_chunks = bytes[4];
             let chr_rom_chunks = bytes[5];
-            let mapper1 = bytes[6];
-            let mapper2 = bytes[7];
+            let flags6 = bytes[6];
+            let flags7 = bytes[7];
             let prg_ram_size = bytes[8];
             let tv_system1 = bytes[9];
             let tv_system2 = bytes[10];
 
             INesHeader {
-                name,
                 prg_rom_chunks,
                 chr_rom_chunks,
-                mapper1,
-                mapper2,
+                flags6,
+                flags7,
                 prg_ram_size,
                 tv_system1,
                 tv_system2,
@@ -50,7 +51,8 @@ impl Cartridge {
             f.seek(SeekFrom::Current(512));
         }
 
-        let mapper_id =
+        let mapper_id = ((header.flags7 >> 4) << 4) | (header.flags6 >> 4);
+        let mapper = create_mapper(mapper_id, header.prg_rom_chunks, header.chr_rom_chunks);
 
         return Cartridge {
             program_mem: vec![0x00, 16384],
@@ -61,33 +63,32 @@ impl Cartridge {
     // Read and write functions return booleans which state whether
     // the cartridge's mapper has decided to take ownership of a referenced address
 
-    pub fn cpu_read(addr: u16, data: &mut u8) -> bool {
+    pub fn cpu_read(&self, addr: u16, data: &mut u8) -> bool {
         return true;
     }
 
-    pub fn cpu_write(addr: u16, data: u8) -> bool {
+    pub fn cpu_write(&mut self, addr: u16, data: u8) -> bool {
         return true;
     }
 
-    pub fn ppu_read(addr: u16, data: &mut u8) -> bool {
+    pub fn ppu_read(&self, addr: u16, data: &mut u8) -> bool {
         return true;
     }
 
-    pub fn ppu_write(addr: u16, data: u8) -> bool {
+    pub fn ppu_write(&mut self, addr: u16, data: u8) -> bool {
         return true;
     }
 
-    pub fn reset() {
+    pub fn reset(&mut self) {
 
     }
 }
 
 struct INesHeader {
-    name: [u8; 4],
     prg_rom_chunks: u8,
     chr_rom_chunks: u8,
-    mapper1: u8,
-    mapper2: u8,
+    flags6: u8,
+    flags7: u8,
     prg_ram_size: u8,
     tv_system1: u8,
     tv_system2: u8,
