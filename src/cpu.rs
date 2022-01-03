@@ -1,6 +1,6 @@
 // Emulates 6502 CPU
 
-use std::{ptr::null_mut, convert::TryInto};
+use std::{ptr::null_mut, convert::TryInto, cell::RefCell, rc::Rc};
 
 use crate::bus::Bus;
 
@@ -42,11 +42,11 @@ pub struct Cpu {
 
     lookup: Vec<Instruction>,
 
-    bus_ptr: *mut Bus,
+    bus_ptr: Rc<RefCell<Bus>>,
 }
 
 impl Cpu {
-    pub fn new() -> Cpu{
+    pub fn new(bus_ptr: Rc<RefCell<Bus>>) -> Cpu{
         return Cpu{
             a: 0,
             x: 0,
@@ -64,12 +64,8 @@ impl Cpu {
             lookup: vec![
                 I{name: "BRK", operation: Cpu::BRK, addr_mode: Cpu::IMM, cycles: 7}
             ],
-            bus_ptr: null_mut(),
+            bus_ptr: bus_ptr,
         };
-    }
-
-    pub fn attach_bus(&mut self, bus_ptr: *mut Bus){
-        self.bus_ptr = bus_ptr;
     }
 
     // helper methods
@@ -87,15 +83,11 @@ impl Cpu {
     }
 
     fn read(&self, addr: u16) -> u8{
-        unsafe{
-            return (*self.bus_ptr).cpu_ram[addr as usize];
-        }
+        return Bus::read(self.bus_ptr.clone(), addr, false);
     }
 
     fn write(&self, addr: u16, val: u8){
-        unsafe{
-            (*self.bus_ptr).cpu_ram[addr as usize] = val;
-        }
+        Bus::write(self.bus_ptr.clone(), addr, val);
     }
     
     // address modes

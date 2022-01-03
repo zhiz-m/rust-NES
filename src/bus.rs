@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::cartridge::Cartridge;
 use crate::cpu::Cpu;
 
@@ -7,41 +10,40 @@ pub struct Bus {
 }
 
 impl Bus {
-    pub fn new() -> Bus{
-        let mut cpu = Cpu::new();
-        let mut bus = Bus { 
+    pub fn new() -> Rc<RefCell<Bus>> {
+        let bus = Rc::new(RefCell::new(Bus { 
             cpu: None,
             cpu_ram: vec![0x00; 2048],
-        };
-        cpu.attach_bus(&mut bus);
-        bus.cpu = Some(cpu);
+        }));
+        let cpu = Cpu::new(bus.clone());
+        bus.borrow_mut().cpu = Some(cpu);
         return bus;
     }
 
-    pub fn write(&mut self, addr: u16, data: u8) {
+    pub fn write(bus: Rc<RefCell<Bus>>, addr: u16, data: u8) {
         // always evaluates to True for time being
         if addr <= 0x0800{
-            self.cpu_ram[addr as usize] = data;
+            bus.borrow_mut().cpu_ram[addr as usize] = data;
         }
     }
 
-    pub fn read(&self, addr: u16, read_only: bool) -> u8 {
+    pub fn read(bus: Rc<RefCell<Bus>>, addr: u16, read_only: bool) -> u8 {
         // todo
         if addr <= 0x0800{
-            return self.cpu_ram[addr as usize];
+            return bus.borrow().cpu_ram[addr as usize];
         }
         return 0x00;
     }
 
-    pub fn insert_cartridge(&mut self, cartridge: &Cartridge) {
+    pub fn insert_cartridge(bus: Rc<RefCell<Bus>>, cartridge: &Cartridge) {
         // todo
     }
 
-    pub fn reset(&mut self) {
+    pub fn reset(bus: Rc<RefCell<Bus>>) {
         // todo
     }
 
-    pub fn clock_tick(&mut self) {
+    pub fn clock_tick(bus: Rc<RefCell<Bus>>) {
         // todo
     }
 }
