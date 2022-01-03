@@ -20,30 +20,30 @@ impl Bus {
         return bus;
     }
 
-    pub fn write(bus: Rc<RefCell<Bus>>, addr: u16, data: u8) {
+    pub fn write(&mut self, addr: u16, data: u8) {
         // always evaluates to True for time being
         if addr <= 0x0800{
-            bus.borrow_mut().cpu_ram[addr as usize] = data;
+            self.cpu_ram[addr as usize] = data;
         }
     }
 
-    pub fn read(bus: Rc<RefCell<Bus>>, addr: u16, read_only: bool) -> u8 {
+    pub fn read(&self, addr: u16, read_only: bool) -> u8 {
         // todo
         if addr <= 0x0800{
-            return bus.borrow().cpu_ram[addr as usize];
+            return self.cpu_ram[addr as usize];
         }
         return 0x00;
     }
 
-    pub fn insert_cartridge(bus: Rc<RefCell<Bus>>, cartridge: &Cartridge) {
+    pub fn insert_cartridge(&mut self, cartridge: &Cartridge) {
         // todo
     }
 
-    pub fn reset(bus: Rc<RefCell<Bus>>) {
+    pub fn reset(&mut self) {
         // todo
     }
 
-    pub fn clock_tick(bus: Rc<RefCell<Bus>>) {
+    pub fn clock_tick(&mut self) {
         // todo
     }
 }
