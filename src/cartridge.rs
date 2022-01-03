@@ -31,6 +31,7 @@ impl Cartridge {
             let chr_rom_chunks = bytes[5];
             let flags6 = bytes[6];
             let flags7 = bytes[7];
+
             let prg_ram_size = bytes[8];
             let tv_system1 = bytes[9];
             let tv_system2 = bytes[10];
@@ -54,33 +55,71 @@ impl Cartridge {
         let mapper_id = ((header.flags7 >> 4) << 4) | (header.flags6 >> 4);
         let mapper = create_mapper(mapper_id, header.prg_rom_chunks, header.chr_rom_chunks);
 
+        let ines_version = (header.flags7 >> 2) & 0x03;
+        if ines_version != 1 {
+            panic!("Unknown ines file version of {} detected (Only 1 is supported). ROM possibly corrupt?", ines_version);
+        }
+
+        let mut program_mem = vec![0x00, header.prg_rom_chunks * 16384];
+        f.read_exact(&mut program_mem[..])?;
+
+        let mut character_mem = if header.chr_rom_chunks == 0 {
+            vec![0x00, 8192]
+        } else {
+            vec![0x00, header.chr_rom_chunks * 8192]
+        };
+        f.read_exact(&mut character_mem[..])?;
+
         return Cartridge {
-            program_mem: vec![0x00, 16384],
-            character_mem: vec![0x00, 8192],
+            program_mem,
+            character_mem,
+            mapper,
         }
     }
 
     // Read and write functions return booleans which state whether
     // the cartridge's mapper has decided to take ownership of a referenced address
 
-    pub fn cpu_read(&self, addr: u16, data: &mut u8) -> bool {
-        return true;
+    pub fn cpu_read(&self, addr: u16) -> Option<u8> {
+        let mapped_addr = self.mapper.cpu_map_read(addr);
+        return match mapped_addr {
+            Some(m_addr) => Some(self.program_mem[m_addr]),
+            None => None,
+        };
     }
 
     pub fn cpu_write(&mut self, addr: u16, data: u8) -> bool {
-        return true;
+        let mapped_addr = self.mapper.cpu_map_write(addr);
+        return match mapped_addr {
+            Some(m_addr) => {
+                self.program_mem[m_addr] = data;
+                true
+            },
+            None => false,
+        }
     }
 
-    pub fn ppu_read(&self, addr: u16, data: &mut u8) -> bool {
-        return true;
+    pub fn ppu_read(&self, addr: u16) -> Option<u8> {
+        let mapped_addr = self.mapper.ppu_map_read(addr);
+        return match mapped_addr {
+            Some(m_addr) => Some(self.character_mem[m_addr]),
+            None => None,
+        };
     }
 
     pub fn ppu_write(&mut self, addr: u16, data: u8) -> bool {
-        return true;
+        let mapped_addr = self.mapper.ppu_map_write(addr);
+        return match mapped_addr {
+            Some(m_addr) => {
+                self.character_mem[m_addr] = data;
+                true
+            },
+            None => false,
+        }
     }
 
     pub fn reset(&mut self) {
-
+        self.mapper.reset();
     }
 }
 

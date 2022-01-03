@@ -15,39 +15,37 @@ impl Mapper000 {
 }
 
 impl Mapper for Mapper000 {
-    fn cpu_map_read(&self, addr: u16, mapped_addr: &mut u32) -> bool {
+    fn cpu_map_read(&self, addr: u16) -> Option<u32> {
         if addr >= 0x8000 && addr <= 0xFFFF {
             if self.num_prg_banks > 1 {
-                *mapped_addr = (addr & 0x7FFF) as u32;
+                return Some((addr & 0x7FFF) as u32);
             } else {
-                *mapped_addr = (addr & 0x3FFF) as u32;
+                return Some((addr & 0x3FFF) as u32);
             }
-
-            return true;
         }
 
-        return false;
+        return None;
     }
 
-    fn cpu_map_write(&self, addr: u16, mapped_addr: &mut u32) -> bool {
-        return self.cpu_map_read(addr, mapped_addr);
+    fn cpu_map_write(&self, addr: u16) -> Option<u32> {
+        return self.cpu_map_read(addr);
     }
 
-    fn ppu_map_read(&self, addr: u16, mapped_addr: &mut u32) -> bool {
+    fn ppu_map_read(&self, addr: u16) -> Option<u32> {
         if addr >= 0x0000 && addr <= 0x1FFF {
-            *mapped_addr = addr as u32;
-            return true;
+            return Some(addr as u32);
         }
 
-        return false;
+        return None;
     }
 
-    fn ppu_map_write(&self, addr: u16, mapped_addr: &mut u32) -> bool {
+    fn ppu_map_write(&self, addr: u16) -> Option<u32> {
         if addr >= 0x0000 && addr <= 0x1FFF && self.num_chr_banks == 0 {
-            *mapped_addr = addr as u32;
-            return true;
+            return Some(addr as u32);
         }
 
-        return false;
+        return None;
     }
+
+    fn reset(&mut self) { }
 }
