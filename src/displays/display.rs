@@ -1,8 +1,8 @@
 #[derive(Clone, Copy)]
 pub struct Pixel {
-    r: u8,
-    g: u8,
-    b: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
 }
 
 impl Pixel{
@@ -12,13 +12,13 @@ impl Pixel{
 }
 
 pub struct ScreenBuffer {
-    buffer: [[Pixel; 240]; 256],
+    buffer: [[Pixel; 256]; 240],
 }
 
 impl ScreenBuffer{
     pub fn new() -> ScreenBuffer{
         return ScreenBuffer{
-            buffer: [[Pixel::new(0,0,0); 240]; 256],
+            buffer: [[Pixel::new(0,0,0); 256]; 240],
         }
     }
     pub fn write_pixel(&mut self, row: usize, col: usize, pixel: Pixel){

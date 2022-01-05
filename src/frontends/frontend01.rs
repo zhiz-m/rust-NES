@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use glutin_window::GlutinWindow as Window;
 use graphics::{clear, Transformed, rectangle};
 use opengl_graphics::{GlGraphics, OpenGL};
@@ -37,22 +39,21 @@ impl Frontend for Frontend01{
     fn render(&mut self, buf: &ScreenBuffer) -> Result<bool, &'static str>{
         if let Some(e) = self.events.as_mut().unwrap().next(self.window.as_mut().unwrap()){
             if let Some(args) = e.render_args(){
-                const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
-                const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
-                let (x, y) = (args.window_size[0] / 2.0, args.window_size[1] / 2.0);
-                let square = rectangle::square(0.0, 0.0, 50.0);
+                let square = rectangle::square(0.0, 0.0, 2.);
+                
                 self.gl.as_mut().unwrap().draw(args.viewport(), |c, gl| {
-                    // Clear the screen.
-                    clear(GREEN, gl);
-                    println!("called2");
-                    let transform = c
-                        .transform
-                        .trans(x, y)
-                        .rot_rad(2.)
-                        .trans(-25.0, -25.0);
+                    clear([0., 0., 0., 1.], gl);
                     
-                    // Draw a box rotating around the middle of the screen.
-                    rectangle(RED, square, transform, gl);
+                    for i in 0..240{
+                        for j in 0..256{
+                            let transform = c
+                                .transform
+                                .trans(j as f64 * 2., i as f64 * 2.);
+                            let pixel = buf.read_pixel(i, j);
+                            let color = [buf.read_pixel(i, j)];
+                            rectangle([pixel.r as f32 / 255., pixel.g as f32 / 255., pixel.b as f32 / 255., 1.], square, transform, gl);
+                        }
+                    }
                 });
             }
             return Ok(true);
