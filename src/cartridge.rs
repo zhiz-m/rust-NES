@@ -1,6 +1,6 @@
 use std::string::String;
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom, Error};
 use crate::mappers::mapper::Mapper;
 use crate::mappers::mapper_factory::create_mapper;
 
@@ -11,7 +11,7 @@ pub struct Cartridge {
 }
 
 impl Cartridge {
-    pub fn new(rom_path: &String) -> Cartridge {
+    pub fn new(rom_path: &String) -> Result<Cartridge, Error> {
         let mut f = File::open(&rom_path)
             .expect("ROM file should exist");
 
@@ -47,7 +47,7 @@ impl Cartridge {
             }
         };
 
-        if header.mapper1 & 0x04 {
+        if header.flags6 & 0x04 > 0 {
             // Ignore the training data if it exists
             f.seek(SeekFrom::Current(512));
         }
@@ -60,21 +60,21 @@ impl Cartridge {
             panic!("Unknown ines file version of {} detected (Only 1 is supported). ROM possibly corrupt?", ines_version);
         }
 
-        let mut program_mem = vec![0x00, header.prg_rom_chunks * 16384];
+        let mut program_mem = vec![0x00; header.prg_rom_chunks as usize * 16384];
         f.read_exact(&mut program_mem[..])?;
 
         let mut character_mem = if header.chr_rom_chunks == 0 {
-            vec![0x00, 8192]
+            vec![0x00; 8192]
         } else {
-            vec![0x00, header.chr_rom_chunks * 8192]
+            vec![0x00; header.chr_rom_chunks as usize * 8192]
         };
         f.read_exact(&mut character_mem[..])?;
 
-        return Cartridge {
+        return Ok(Cartridge {
             program_mem,
             character_mem,
             mapper,
-        }
+        })
     }
 
     // Read and write functions return booleans which state whether
@@ -83,7 +83,7 @@ impl Cartridge {
     pub fn cpu_read(&self, addr: u16) -> Option<u8> {
         let mapped_addr = self.mapper.cpu_map_read(addr);
         return match mapped_addr {
-            Some(m_addr) => Some(self.program_mem[m_addr]),
+            Some(m_addr) => Some(self.program_mem[m_addr as usize]),
             None => None,
         };
     }
@@ -92,7 +92,7 @@ impl Cartridge {
         let mapped_addr = self.mapper.cpu_map_write(addr);
         return match mapped_addr {
             Some(m_addr) => {
-                self.program_mem[m_addr] = data;
+                self.program_mem[m_addr as usize] = data;
                 true
             },
             None => false,
@@ -102,7 +102,7 @@ impl Cartridge {
     pub fn ppu_read(&self, addr: u16) -> Option<u8> {
         let mapped_addr = self.mapper.ppu_map_read(addr);
         return match mapped_addr {
-            Some(m_addr) => Some(self.character_mem[m_addr]),
+            Some(m_addr) => Some(self.character_mem[m_addr as usize]),
             None => None,
         };
     }
@@ -111,7 +111,7 @@ impl Cartridge {
         let mapped_addr = self.mapper.ppu_map_write(addr);
         return match mapped_addr {
             Some(m_addr) => {
-                self.character_mem[m_addr] = data;
+                self.character_mem[m_addr as usize] = data;
                 true
             },
             None => false,
