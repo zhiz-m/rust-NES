@@ -68,6 +68,22 @@ impl Cpu {
         };
     }
 
+    pub fn reset(&mut self) {
+        self.a = 0;
+        self.x = 0;
+        self.y = 0;
+        self.sp = 0;
+        self.pc = 0;
+        self.status = 0;
+        self.fetched = 0;
+        self.temp = 0;
+        self.addr_abs = 0;
+        self.addr_rel = 0;
+        self.opcode = 0;
+        self.cycles = 0;
+        self.clock_count = 0;
+    }
+
     // helper methods
     fn set_flag(&mut self, f: StatusFlag, val: bool){
         if val{
@@ -90,7 +106,7 @@ impl Cpu {
         self.bus_ptr.borrow_mut().write(addr, val);
     }
 
-    fn fetch(&self) -> u8{
+    fn fetch(&mut self) -> u8{
         // might be sketchy
         if self.lookup[self.opcode as usize].addr_mode as usize != Cpu::IMP as usize{
             self.fetched = self.read(self.addr_abs);
