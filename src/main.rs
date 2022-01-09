@@ -5,6 +5,7 @@ mod cartridge;
 mod mappers;
 mod displays;
 mod frontends;
+mod apu;
 
 use crate::frontends::{
     frontend::{Frontend},

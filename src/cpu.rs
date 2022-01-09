@@ -18,13 +18,13 @@ enum StatusFlag{
 #[derive(Clone)]
 struct Instruction{
     name: &'static str,
-    operation: fn(&mut Cpu) -> u8,
-    addr_mode: fn(&mut Cpu) -> u8,
+    operation: fn(&mut CPU) -> u8,
+    addr_mode: fn(&mut CPU) -> u8,
     cycles: u8,
 }
 
 type I = Instruction;
-pub struct Cpu {
+pub struct CPU {
     pub a: u8,
     pub x: u8,
     pub y: u8,
@@ -42,12 +42,12 @@ pub struct Cpu {
 
     lookup: Vec<Instruction>,
 
-    bus_ptr: Rc<RefCell<Bus>>,
+    bus: Bus,
 }
 
-impl Cpu {
-    pub fn new(bus_ptr: Rc<RefCell<Bus>>) -> Cpu{
-        return Cpu{
+impl CPU {
+    pub fn new(bus: Bus) -> CPU{
+        return CPU{
             a: 0,
             x: 0,
             y: 0,
@@ -62,9 +62,9 @@ impl Cpu {
             cycles: 0,
             clock_count: 0,
             lookup: vec![
-                I{name: "BRK", operation: Cpu::BRK, addr_mode: Cpu::IMM, cycles: 7}
+                I{name: "BRK", operation: CPU::BRK, addr_mode: CPU::IMM, cycles: 7}
             ],
-            bus_ptr: bus_ptr,
+            bus,
         };
     }
 
@@ -99,16 +99,16 @@ impl Cpu {
     }
 
     fn read(&self, addr: u16) -> u8{
-        return self.bus_ptr.borrow().read(addr, false);
+        return self.bus.read(addr, false);
     }
 
-    fn write(&self, addr: u16, val: u8){
-        self.bus_ptr.borrow_mut().write(addr, val);
+    fn write(&mut self, addr: u16, val: u8){
+        self.bus.write(addr, val);
     }
 
     fn fetch(&mut self) -> u8{
         // might be sketchy
-        if self.lookup[self.opcode as usize].addr_mode as usize != Cpu::IMP as usize{
+        if self.lookup[self.opcode as usize].addr_mode as usize != CPU::IMP as usize{
             self.fetched = self.read(self.addr_abs);
         }
         return self.fetched;
@@ -275,7 +275,7 @@ impl Cpu {
         self.set_flag(StatusFlag::Z, self.temp & 0x00FF == 0x00);
         self.set_flag(StatusFlag::N, self.temp & 0x80 > 0);
         let ret = (self.temp & 0x00FF) as u8;
-        if self.lookup[self.opcode as usize].addr_mode as usize != Cpu::IMP as usize{
+        if self.lookup[self.opcode as usize].addr_mode as usize != CPU::IMP as usize{
             self.a = ret;
         }
         else{
@@ -556,7 +556,7 @@ impl Cpu {
         self.set_flag(StatusFlag::Z, self.temp & 0x00FF == 0x00);
         self.set_flag(StatusFlag::N, self.temp & 0x80 > 0);
         let ret = (self.temp & 0x00FF) as u8;
-        if self.lookup[self.opcode as usize].addr_mode as usize != Cpu::IMP as usize{
+        if self.lookup[self.opcode as usize].addr_mode as usize != CPU::IMP as usize{
             self.a = ret;
         }
         else{
@@ -619,7 +619,7 @@ impl Cpu {
         self.set_flag(StatusFlag::Z, self.temp & 0x00FF == 0);
         self.set_flag(StatusFlag::N, self.temp & 0x80 > 0);
         let ret = (self.temp & 0x00FF) as u8;
-        if self.lookup[self.opcode as usize].addr_mode as usize != Cpu::IMP as usize{
+        if self.lookup[self.opcode as usize].addr_mode as usize != CPU::IMP as usize{
             self.a = ret;
         }
         else{
@@ -635,7 +635,7 @@ impl Cpu {
         self.set_flag(StatusFlag::Z, self.temp & 0x00FF == 0);
         self.set_flag(StatusFlag::N, self.temp & 0x80 > 0);
         let ret = (self.temp & 0x00FF) as u8;
-        if self.lookup[self.opcode as usize].addr_mode as usize != Cpu::IMP as usize{
+        if self.lookup[self.opcode as usize].addr_mode as usize != CPU::IMP as usize{
             self.a = ret;
         }
         else{

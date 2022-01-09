@@ -1,7 +1,7 @@
-pub struct Ppu {
+pub struct PPU {
 
 }
 
-impl Ppu {
+impl PPU {
 
 }
